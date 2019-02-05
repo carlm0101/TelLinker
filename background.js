@@ -11,13 +11,18 @@ chrome.runtime.onInstalled.addListener(function() {
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
     var phoneNumberPattern = /([\s:]|\d+(?:-|\.)|^)\(?(\d{3})\)?[- \.]?(\d{3})[- \.]?(\d{4})(?=<|\s|$)/g;
     var phoneNumberRegex = new RegExp(phoneNumberPattern);
+    var httpProto = new RegExp('https?:');
 
     var selectedText = info.selectionText;
     chrome.storage.local.get({
         telLinkFormat: defaultTelFormat
     }, function (settings) {
         if (!phoneNumberRegex.test(selectedText)) {
-            chrome.tabs.update(tab.id, { url: settings.telLinkFormat.substring(0, settings.telLinkFormat.indexOf('{')) + encodeURIComponent(selectedText) });
+            selectedText = selectedText.replace(/\s/g, '');
+            if (settings.telLinkFormat.search(httpProto) >= 0) {
+                selectedText = encodeURIComponent(selectedText);
+            }
+            chrome.tabs.update(tab.id, { url: settings.telLinkFormat.substring(0, settings.telLinkFormat.indexOf('{')) + selectedText });
             return;
         }
         var match = phoneNumberPattern.exec(selectedText);
